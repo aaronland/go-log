@@ -26,6 +26,9 @@ func main(){
 
 	aa_log.UnsetMinLevel()
 
+	// prints "💬 Hello, world"
+	aa_log.Info(logger, "Hello, %w", "world")
+	
 	// prints "🪵 This is a second test"
 	aa_log.Debug(logger, "This is a second test")
 
