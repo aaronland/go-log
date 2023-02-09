@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"log"
+	"os"
 )
 
 // DEBUG_LEVEL is the numeric level associated with "debug" messages.
@@ -74,57 +75,121 @@ func SetMinLevelWithPrefix(prefix string) error {
 	}
 }
 
+func emit(prefix string, args ...interface{}) {
+
+	count_args := len(args)
+
+	var logger *log.Logger
+	var msg string
+	var extras []interface{}
+
+	// Nothing to do. Go home.
+
+	if count_args == 0 {
+		return
+	}
+
+	// Check to see whether first arg is a *log.Logger instance
+	// If not create a logger and check whether first argument
+	// is an error.
+
+	if count_args >= 1 {
+
+		switch args[0].(type) {
+		case *log.Logger:
+			logger = args[0].(*log.Logger)
+		default:
+
+			// See the way we are calling log.New rather than log.Default?
+			// That's mostly so for the tests so that we can capture STDERR
+			// The value if log.Default is a global singleton in log/log.go
+			// which references an instance os.Stderr which doesn't seem to
+			// get updated when we reassign it in the tests. I suppose this
+			// might be the cause of "hilarity" in the future but it will
+			// do for now...
+			// https://cs.opensource.google/go/go/+/refs/tags/go1.20:src/log/log.go;l=89
+
+			logger = log.New(os.Stderr, "", log.LstdFlags)
+
+			switch args[0].(type) {
+			case string:
+				msg = args[0].(string)
+			default:
+				msg = fmt.Sprintf("%v", args[0])
+			}
+		}
+	}
+
+	// Check to see whether second arg is a log formatting string
+	// or an error (or really anything other than a string)
+
+	if count_args >= 2 {
+
+		switch args[1].(type) {
+		case string:
+			msg = args[1].(string)
+		default:
+			msg = fmt.Sprintf("%v", args[1])
+		}
+	}
+
+	// Anything else
+
+	if count_args >= 3 {
+		extras = args[2:]
+	}
+
+	msg = fmt.Sprintf("%s %s", prefix, msg)
+	logger.Printf(msg, extras...)
+}
+
 // Emit a "debug" log message.
-func Debug(logger *log.Logger, msg string, args ...interface{}) {
+func Debug(args ...interface{}) {
 
 	if minLevel > DEBUG_LEVEL {
 		return
 	}
 
-	msg = fmt.Sprintf("%s %s", DEBUG_PREFIX, msg)
-	logger.Printf(msg, args...)
+	emit(DEBUG_PREFIX, args...)
 }
 
 // Emit a "info" log message.
-func Info(logger *log.Logger, msg string, args ...interface{}) {
+func Info(args ...interface{}) {
 
 	if minLevel > INFO_LEVEL {
 		return
 	}
 
-	msg = fmt.Sprintf("%s %s", INFO_PREFIX, msg)
-	logger.Printf(msg, args...)
+	emit(INFO_PREFIX, args...)
 }
 
 // Emit a "warning" log message.
-func Warning(logger *log.Logger, msg string, args ...interface{}) {
+func Warning(args ...interface{}) {
 
 	if minLevel > WARNING_LEVEL {
 		return
 	}
 
-	msg = fmt.Sprintf("%s %s", WARNING_PREFIX, msg)
-	logger.Printf(msg, args...)
+	emit(WARNING_PREFIX, args...)
 }
 
 // Emit an "error" log message.
-func Error(logger *log.Logger, msg string, args ...interface{}) {
+func Error(args ...interface{}) {
 
 	if minLevel > ERROR_LEVEL {
 		return
 	}
 
-	msg = fmt.Sprintf("%s %s", ERROR_PREFIX, msg)
-	logger.Printf(msg, args...)
+	emit(ERROR_PREFIX, args...)
 }
 
 // Emit an "fatal" log message.
-func Fatal(logger *log.Logger, msg string, args ...interface{}) {
+func Fatal(args ...interface{}) {
 
 	if minLevel > FATAL_LEVEL {
 		return
 	}
 
-	msg = fmt.Sprintf("%s %s", FATAL_PREFIX, msg)
-	logger.Fatalf(msg, args...)
+	emit(FATAL_PREFIX, args...)
+	os.Exit(1)
 }
