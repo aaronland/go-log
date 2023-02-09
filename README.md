@@ -34,7 +34,7 @@ func main(){
 
 	// Emits errors using the default Go *log.Logger instance
 	// prints "{YYYY}/{MM}/{DD} {HH}:{MM}:{SS} 🧯 This is a second error"
-	// aa_log.Warning(fmt.Errorf("This is a second error"))
+	aa_log.Warning(fmt.Errorf("This is a second error"))
 }
 ```
 
